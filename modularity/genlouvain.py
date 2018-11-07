@@ -10,7 +10,7 @@ Author: Ankit N. Khambhati <akhambhati@gmail.com>
 Last Updated: 2018/11/07
 """
 
-from __future__ import division
+from __future__ import division, print_function
 
 import time
 
