@@ -1,2 +1,2 @@
-from . import matr_util
+from . import matrix
 from .genlouvain import genlouvain
