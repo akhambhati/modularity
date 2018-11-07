@@ -1,3 +1,4 @@
+import codecs
 import os
 
 from setuptools import find_packages, setup
@@ -6,6 +7,16 @@ import version
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 
+
+def read(*parts):
+    """
+    Build an absolute path from *parts* and and return the contents of the
+    resulting file.  Assume UTF-8 encoding.
+    """
+    with codecs.open(os.path.join(HERE, *parts), "rb", "utf-8") as f:
+        return f.read()
+
+
 # ==============================================================================
 # Variables
 # ==============================================================================
@@ -13,8 +24,7 @@ HERE = os.path.abspath(os.path.dirname(__file__))
 NAME = "modularity"
 VERSION = version.get_version()
 DESCRIPTION = "modularity: A repository for finding modules in complex networks."
-with open(os.path.join(HERE, 'README.rst'), encoding='utf-8') as f:
-    LONG_DESCRIPTION = f.read()
+LONG_DESCRIPTION = read('README.rst')
 PACKAGES = find_packages()
 AUTHOR = "Ankit N. Khambhati"
 AUTHOR_EMAIL = "akhambhati@gmail.com"
