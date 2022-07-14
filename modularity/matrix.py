@@ -93,8 +93,9 @@ def super_modularity_matr(conn_matr, gamma, omega, null='None'):
             Connection matrix over multiple layers
             Has shape: [n_layers x n_conns]
 
-        gamma: float
+        gamma: numpy.ndarray
             Intra-layer resolution parameter, typical values around 1.0
+            Has shape: [n_layers]
 
         omega: float
             Inter-layer resolution parameter, typical values around 1.0
@@ -114,7 +115,7 @@ def super_modularity_matr(conn_matr, gamma, omega, null='None'):
     """
     # Standard param checks
     err.check_type(conn_matr, np.ndarray)
-    err.check_type(gamma, float)
+    err.check_type(gamma, np.ndarray)
     err.check_type(omega, float)
     err.check_type(null, str)
 
@@ -165,7 +166,7 @@ def super_modularity_matr(conn_matr, gamma, omega, null='None'):
         # Multi-slice modularity matrix
         start_ix = ll * n_nodes
         end_ix = (ll + 1) * n_nodes
-        B[start_ix:end_ix, start_ix:end_ix] = A - gamma * P
+        B[start_ix:end_ix, start_ix:end_ix] = A - gamma[ll] * P
 
     # Add inter-slice degree
     twomu += twomu + 2 * omega * n_nodes * (n_layers - 1)
