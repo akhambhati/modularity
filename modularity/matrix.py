@@ -81,231 +81,90 @@ def convert_adj_matr_to_conn_vec(adj_matr):
     return conn_vec
 
 
-def super_modularity_matr(conn_matr, gamma, omega, null='None', Pnull=None):
+def super_modularity_matr(ml_adj_matr, layer_weight_matr, null_ml_adj_matr=None):
     """
-    Find the super modularity matrix of a network with single or multiple
-    layers. Current implementation assumes sequential linking between layers
-    with homogenous weights.
+    Returns a super modularity matrix of a network based on
+    constraints provided by a topological null model and inter/intra-layer
+    interactivity.
 
     Parameters
     ----------
-        conn_matr: numpy.ndarray
-            Connection matrix over multiple layers
-            Has shape: [n_layers x n_conns]
+        ml_adj_matr: numpy.ndarray
+            Multilayer adjacency matrix
+            Has shape: [n_layers x n_nodes x n_nodes]
 
-        gamma: numpy.ndarray
-            Intra-layer resolution parameter, typical values around 1.0
-            Has shape: [n_layers]
+        layer_weight_matr: numpy.ndarray
+            Diagonal contains structural resolution weights specific to 
+            the intra-layer connectivity. Off-diagonal contains weights
+            linking nodes across layers.
+            Has shape: [n_layers x n_layers]
 
-        omega: float
-            Inter-layer resolution parameter, typical values around 1.0
-
-        null: str
-            Choose a null mode type: 
-                ['None', 'sequential', 'connectional', 'nodal']
-
-    Returns
-    -------
-        ml_mod_matr: numpy.ndarray
-            Multilayer modularity matrix
-            Has shape: [n_nodes*n_layers x n_nodes*n_layers]
-
-        twomu: float
-            Total edge weight in the network
-    """
-    # Standard param checks
-    err.check_type(conn_matr, np.ndarray)
-    err.check_type(gamma, np.ndarray)
-    err.check_type(omega, float)
-    err.check_type(null, str)
-
-    # Check conn_matr dimensions
-    if not len(conn_matr.shape) == 2:
-        raise ValueError('%r does not have two-dimensions' % conn_matr)
-    n_layers = conn_matr.shape[0]
-    n_conns = conn_matr.shape[1]
-    n_nodes = int(np.floor(np.sqrt(2 * n_conns)) + 1)
-
-    # Check null model specomm_initfication
-    valid_null_types = ['none', 'sequential', 'connectional', 'nodal', 'ng', 'potts']
-    null = null.lower()
-    if null not in valid_null_types:
-        raise ValueError('%r is not on of %r' % (null, valid_null_types))
-
-    # Initialize multilayer matrix
-    B = np.zeros((n_nodes * n_layers, n_nodes * n_layers))
-    twomu = 0
-
-    if null == 'sequential':
-        rnd_layer_ix = np.random.permutation(n_layers)
-        conn_matr = conn_matr[rnd_layer_ix, :]
-
-    if null == 'connectional':
-        rnd_node_ix = np.random.permutation(n_nodes)
-        rnd_node_iy = np.random.permutation(n_nodes)
-        ix, iy = np.mgrid[0:n_nodes, 0:n_nodes]
-
-    for ll, conn_vec in enumerate(conn_matr):
-        A = convert_conn_vec_to_adj_matr(conn_vec)
-        if null == 'connectional':
-            A = A[rnd_node_ix[ix], rnd_node_iy[iy]]
-            A = np.triu(A, k=1)
-            A += A.T
-
-        # Compute node degree
-        k = np.sum(A, axis=0)
-        twom = np.sum(k)  # Intra-layer average node degree
-        twomu += twom  # Inter-layer accumulated node degree
-
-        # NG Null-model
-        if Pnull is None:
-            if null == 'ng':
-                if twom < 1e-6:
-                    P = np.dot(k.reshape(-1, 1), k.reshape(1, -1)) / 1.0
-                else:
-                    P = np.dot(k.reshape(-1, 1), k.reshape(1, -1)) / twom
-            elif null == 'potts':
-                P = np.ones_like(A)
-        else:
-            P = Pnull[ll]
-
-        # Multi-slice modularity matrix
-        start_ix = ll * n_nodes
-        end_ix = (ll + 1) * n_nodes
-        B[start_ix:end_ix, start_ix:end_ix] = A - gamma[ll] * P
-
-    # Add inter-slice degree
-    twomu += twomu + 2 * omega * n_nodes * (n_layers - 1)
-
-    # Add the sequential inter-layer model
-    interlayer = sp.spdiags(
-        np.ones((2, n_nodes * n_layers)), [-n_nodes, n_nodes],
-        n_nodes * n_layers, n_nodes * n_layers).toarray()
-    if null == 'nodal':
-        null_layer = np.random.permutation(np.diag(np.ones(n_nodes)))
-        for ll in range(n_layers - 1):
-            interlayer[ll * n_nodes:(ll + 1) * n_nodes, (ll + 1) * n_nodes:(
-                ll + 2) * n_nodes] = null_layer
-        interlayer = np.triu(interlayer, k=1)
-        interlayer += interlayer.T
-
-    B = B + omega * interlayer
-    B = np.triu(B, k=1)
-    B += B.T
-    ml_mod_matr = B
-
-    return ml_mod_matr, twomu
-
-
-def multiscale_modularity_matr(conn_matr, gamma, omega, P):
-    """
-    Find the super modularity matrix of a network with single or multiple
-    layers. Current implementation assumes sequential linking between layers
-    with homogenous weights.
-
-    Parameters
-    ----------
-        conn_matr: numpy.ndarray
-            Connection matrix over multiple layers
-            Has shape: [n_layers x n_conns]
-
-        gamma: numpy.ndarray
-            Intra-layer resolution parameter, typical values around 1.0
-            Has shape: [n_layers]
-
-        omega: float
-            Inter-layer resolution parameter, typical values around 1.0
-
-        null: str
-            Choose a null mode type: 
-                ['None', 'sequential', 'connectional', 'nodal']
+        null_ml_adj_matr: numpy.ndarray
+            Null multilayer adjacency matrix containing edge interactions
+            derived from a surrogate model of the network.
+            Has shape: [n_layers x n_nodes x n_nodes]
 
     Returns
     -------
-        ml_mod_matr: numpy.ndarray
-            Multilayer modularity matrix
+        B_super: numpy.ndarray
+            Super multilayer modularity matrix
             Has shape: [n_nodes*n_layers x n_nodes*n_layers]
-
-        twomu: float
-            Total edge weight in the network
     """
     # Standard param checks
-    err.check_type(conn_matr, np.ndarray)
-    err.check_type(gamma, np.ndarray)
-    err.check_type(omega, float)
-    err.check_type(null, str)
+    err.check_type(ml_adj_matr, np.ndarray)
+    err.check_type(layer_weight_matr, np.ndarray)
 
-    # Check conn_matr dimensions
-    if not len(conn_matr.shape) == 2:
-        raise ValueError('%r does not have two-dimensions' % conn_matr)
-    n_layers = conn_matr.shape[0]
-    n_conns = conn_matr.shape[1]
-    n_nodes = int(np.floor(np.sqrt(2 * n_conns)) + 1)
+    # Check ml_adj_matr dimensions
+    if not len(ml_adj_matr.shape) == 3:
+        raise ValueError('%r does not have three-dimensions' % ml_adj_matr)
+    n_layers, n_nodes_x, n_nodes_y = ml_adj_matr.shape
+    if not n_nodes_x == n_nodes_y:
+        raise ValueError('%r is not symmetric' % ml_adj_matr)
+    n_nodes = n_nodes_x
 
-    # Check null model specomm_initfication
-    valid_null_types = ['none', 'sequential', 'connectional', 'nodal', 'ng', 'potts']
-    null = null.lower()
-    if null not in valid_null_types:
-        raise ValueError('%r is not on of %r' % (null, valid_null_types))
+    # Check null ml_adj_matr dimensions
+    if null_ml_adj_matr is not None:
+        if not ml_adj_matr.shape == null_ml_adj_matr.shape:
+            raise ValueError('null_ml_adj_matr is not of compatible size with ml_adj_matr')
 
-    # Initialize multilayer matrix
-    B = np.zeros((n_nodes * n_layers, n_nodes * n_layers))
-    twomu = 0
+        B_intra_layer = ml_adj_matr - null_ml_adj_matr
+    else:
+        B_intra_layer = ml_adj_matr.copy()
 
-    if null == 'sequential':
-        rnd_layer_ix = np.random.permutation(n_layers)
-        conn_matr = conn_matr[rnd_layer_ix, :]
+    # Check layer_weight_matr dimensions
+    if not len(layer_weight_matr.shape) == 2:
+        raise ValueError('%r does not have two-dimensions' % layer_weight_matr)
+    n_layers_x, n_layers_y = layer_weight_matr.shape
+    if not n_layers_x == n_layers_y:
+        raise ValueError('%r is not symmetric' % layer_weight_matr)
+    if not n_layers == n_layers_x:
+        raise ValueError('layer_weight_matr is not of compatible size with ml_adj_matr')
 
-    if null == 'connectional':
-        rnd_node_ix = np.random.permutation(n_nodes)
-        rnd_node_iy = np.random.permutation(n_nodes)
-        ix, iy = np.mgrid[0:n_nodes, 0:n_nodes]
+    # Apply intra-layer weights
+    B_intra_layer = B_intra_layer - np.diag(layer_weight_matr).reshape(-1,1,1)
 
-    for ll, conn_vec in enumerate(conn_matr):
-        A = convert_conn_vec_to_adj_matr(conn_vec)
-        if null == 'connectional':
-            A = A[rnd_node_ix[ix], rnd_node_iy[iy]]
-            A = np.triu(A, k=1)
-            A += A.T
+    # Apply inter-layer weights
+    B_super = np.zeros((n_nodes * n_layers,
+                        n_nodes * n_layers))
 
-        # Compute node degree
-        k = np.sum(A, axis=0)
-        twom = np.sum(k)  # Intra-layer average node degree
-        twomu += twom  # Inter-layer accumulated node degree
-
-        # NG Null-model
-        if P is None:
-            if null == 'ng':
-                if twom < 1e-6:
-                    P = np.dot(k.reshape(-1, 1), k.reshape(1, -1)) / 1.0
-                else:
-                    P = np.dot(k.reshape(-1, 1), k.reshape(1, -1)) / twom
-            elif null == 'potts':
-                P = np.ones_like(A)
-
-        # Multi-slice modularity matrix
+    # Populate with intra-layer modularity matrices
+    for ll in range(n_layers):
         start_ix = ll * n_nodes
         end_ix = (ll + 1) * n_nodes
-        B[start_ix:end_ix, start_ix:end_ix] = A - gamma[ll] * P
+        B_super[start_ix:end_ix, start_ix:end_ix] = B_intra_layer[ll]
 
-    # Add inter-slice degree
-    twomu += twomu + 2 * omega * n_nodes * (n_layers - 1)
+    # Populate with inter-layer weights
+    for l1 in range(n_layers):
+        for l2 in range(n_layers):
+            if l1 == l2:
+                continue
+            row_start_ix = l1 * n_nodes
+            row_end_ix = (l1 + 1) * n_nodes
+            col_start_ix = l2 * n_nodes
+            col_end_ix = (l2 + 1) * n_nodes
 
-    # Add the sequential inter-layer model
-    interlayer = sp.spdiags(
-        np.ones((2, n_nodes * n_layers)), [-n_nodes, n_nodes],
-        n_nodes * n_layers, n_nodes * n_layers).toarray()
-    if null == 'nodal':
-        null_layer = np.random.permutation(np.diag(np.ones(n_nodes)))
-        for ll in range(n_layers - 1):
-            interlayer[ll * n_nodes:(ll + 1) * n_nodes, (ll + 1) * n_nodes:(
-                ll + 2) * n_nodes] = null_layer
-        interlayer = np.triu(interlayer, k=1)
-        interlayer += interlayer.T
+            B_super[row_start_ix:row_end_ix,
+                    col_start_ix:col_end_ix] = (np.eye(n_nodes) *
+                                                layer_weight_matr[l1, l2])
 
-    B = B + omega * interlayer
-    B = np.triu(B, k=1)
-    B += B.T
-    ml_mod_matr = B
-
-    return ml_mod_matr, twomu
+    return B_super
