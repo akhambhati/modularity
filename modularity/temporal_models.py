@@ -24,20 +24,14 @@ def temporal_state_graph(feature_matrix, nonneg):
             Array containing temporal adjacency matrix. Rows and columns encode
             similarity in the observed feature profile at two different time points.        
     """
-    
-    """
-    if nonneg:
-        M = pairwise.cosine_similarity(feature_matrix)
-    else:
-        M = np.corrcoef(feature_matrix)
-    M[np.diag_indices_from(M)] = 0
-    """
 
     M = np.zeros((feature_matrix.shape[0], feature_matrix.shape[0]))
     for ii, (tr_ix, tr_iy) in enumerate(zip(*np.triu_indices(feature_matrix.shape[0], k=1))):
         ft_pair = feature_matrix[[tr_ix, tr_iy]]
         ft_pair = ft_pair[:, ~np.isnan(ft_pair).any(axis=0)]
-        ma_corr = np.corrcoef(ft_pair)[0,1]
+        ft_pair = (ft_pair.T / np.linalg.norm(ft_pair, axis=1)).T
+        #ma_corr = np.corrcoef(ft_pair)[0,1]
+        ma_corr = (ft_pair @ ft_pair.T)[0,1]
         M[tr_ix, tr_iy] = ma_corr
     M += M.T
     M[np.diag_indices_from(M)] = 0
