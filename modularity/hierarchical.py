@@ -3,7 +3,6 @@ import numpy as np
 from .genlouvain import genlouvain 
 
 
-
 def comms_to_coassign(comms):
     comms_matr = np.zeros((len(comms), len(np.unique(comms))))
     comms_matr[np.arange(len(comms)), comms] = 1
@@ -36,7 +35,7 @@ def gen_consensus(A, P_estimator, n_consensus, max_tries=10):
     comms, _ = genlouvain(A_cons_best, limit=1000, verbose=False) 
 
     return comms, A_cons_best
- 
+
 
 def recursive_clustering(
         A,
@@ -53,8 +52,7 @@ def recursive_clustering(
         for c_id in comm_ids:
             A_comm = A[comm_layers[-1]==c_id, :][:, comm_layers[-1]==c_id]
 
-            subcomms, subA_cons = gen_consensus(
-                    A_comm, limit=1000, verbose=False)
+            subcomms, subA_cons = gen_consensus(A_comm, P_estimator, n_consensus)
             new_comm_layer[comm_layers[-1]==c_id] = subcomms
         comm_layers.append(new_comm_layer)
     return np.array(comm_layers)
