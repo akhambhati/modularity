@@ -18,7 +18,7 @@ def gen_consensus(A, P_estimator, n_consensus, max_tries=10):
         for n_iter in range(n_consensus):
             B = A - P_estimator(A)
             comms, _ = genlouvain(B, limit=1000, verbose=False)
-            A_cons += comms_to_assign(comms)
+            A_cons += comms_to_coassign(comms)
         A_cons /= n_iter
         A_cons[np.diag_indices_from(A_cons)] = 0
 
