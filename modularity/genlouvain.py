@@ -96,6 +96,7 @@ def genlouvain(ml_mod_matr, limit, verbose=True):
     dtot = eps
 
     # Begin greedy algorithm, loop around each pass
+    Q = None
     while True:
         cond_a1 = np.array_equal(comm_vec_old, comm_vec)
         if (cond_a1):
