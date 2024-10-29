@@ -42,19 +42,38 @@ def recursive_clustering(
         A,
         P_estimator,
         n_consensus,
-        n_survival_perm,
-        survival_pval):
+        n_layers):
 
-    n_layers = 5
     comm_layers = [np.zeros(len(A))]
     for layer in range(n_layers):
+        print('Optimizing Layer: {}/{}'.format(layer+1, n_layers))
         new_comm_layer = np.nan*np.zeros(len(A))
         comm_ids = np.unique(comm_layers[-1])
         for c_id in comm_ids:
             A_comm = A[comm_layers[-1]==c_id, :][:, comm_layers[-1]==c_id]
-
             subcomms, subA_cons = gen_consensus(
                     A_comm, limit=1000, verbose=False)
             new_comm_layer[comm_layers[-1]==c_id] = subcomms
         comm_layers.append(new_comm_layer)
     return np.array(comm_layers)
+
+
+def build_tree(comm_layers):
+    node_comm_tree_list = []
+    for node_comm in comm_layers.T:
+        node_comm_tree_list.append('/'.join(node_comm.astype(str)) + '/')
+
+    node_comm_tree_dict = {}
+    for lay_idx in range(len(comm_layers)):
+        scales = {}
+        for node_idx, node_tree in enumerate(node_comm_tree_list):
+            key = '/'.join(node_tree.split('/')[:lay_idx+1])
+            if key not in scales:
+                scales[key] = []
+            scales[key].append(node_idx)
+        node_comm_tree_dict[lay_idx] = scales
+    
+    return node_comm_tree_dict
+
+def prune_tree(A, comm_layers, n_survival_perm, survival_pval):
+    pass
