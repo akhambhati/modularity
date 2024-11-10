@@ -158,7 +158,7 @@ def _get_branch_item(tree, branch):
     return tree
 
 
-def update_tree_modularity(A, P_estimator, tree, n_survival_perm, survival_pval):
+def update_tree_modularity(A, P_estimator, tree, n_survival_perm):
     tree_nodes = np.unique(_tree_all_keys(tree))
     for node in tqdm(tree_nodes):
         branch = _get_branch(tree, node)
