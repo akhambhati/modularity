@@ -161,6 +161,8 @@ def super_modularity_matr(ml_adj_matr, layer_weight_matr, null_ml_adj_matr=None)
         for l2 in range(n_layers):
             if l1 == l2:
                 continue
+            if layer_weight_matr[l1, l2] == 0:
+                continue
             row_start_ix = l1 * n_nodes
             row_end_ix = (l1 + 1) * n_nodes
             col_start_ix = l2 * n_nodes
