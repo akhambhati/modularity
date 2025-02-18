@@ -11,6 +11,7 @@ import scipy.sparse as sp
 
 from . import errors as err
 
+MAX_DENSE = 10000
 
 def convert_conn_vec_to_adj_matr(conn_vec):
     '''
@@ -144,8 +145,10 @@ def super_modularity_matr(ml_adj_matr, layer_weight_matr, null_ml_adj_matr=None)
     B_intra_layer = B_intra_layer - np.diag(layer_weight_matr).reshape(-1,1,1)
 
     # Apply inter-layer weights
-    B_super = np.zeros((n_nodes * n_layers,
-                        n_nodes * n_layers))
+    if (n_nodes * n_layers) > MAX_DENSE:
+        B_super = sp.lil_array((n_nodes * n_layers,  n_nodes * n_layers))
+    else:
+        B_super = np.zeros((n_nodes * n_layers, n_nodes * n_layers))
 
     # Populate with intra-layer modularity matrices
     for ll in range(n_layers):
