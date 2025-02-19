@@ -189,4 +189,4 @@ def genlouvain(ml_mod_matr, limit, verbose=True):
 
     vbprint('\n')
 
-    return comm_vec, Q
+    return comm_vec
