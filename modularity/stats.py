@@ -21,7 +21,10 @@ def modularity_statistic(B, partition, n_perm):
             qc_null.append(B[partition2 == p_id, :][:, partition2 == p_id].mean())
         qc_pv = np.mean(np.array(qc_null) >= qc)
         
-        Q[p_id] = {'Qc': qc, 'Qc_pv': qc_pv}
+        Q[p_id] = {
+                'Qc': qc, 'Qc_pv': qc_pv, 
+                'N': np.int(partition==p_id).sum()),
+                'inds': np.flatnonzero(partition==p_id)}
     return Q
 
 
