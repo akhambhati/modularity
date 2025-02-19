@@ -11,7 +11,7 @@ def gen_consensus(B, n_consensus, max_tries=10, modularity_fn=louvain_helper):
     for n_tries in range(max_tries):
         A_cons = np.zeros_like(B)
         for n_iter in range(n_consensus):
-            comms = louvain_helper(B, limit=1000, verbose=False)
+            comms = louvain_helper(B)
             A_cons += comms_to_coassign(comms)
         A_cons /= n_iter
         A_cons[np.diag_indices_from(A_cons)] = 0
