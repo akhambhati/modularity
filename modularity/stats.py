@@ -25,6 +25,11 @@ def modularity_statistic(B, partition, n_perm):
     return Q
 
 
+def pac_statistic(consensus):
+    E = consensus[*np.triu_indices_from(consensus, k=1)]
+    return np.mean((E > 0) & (E < 1))
+
+
 def jaccard_statistic(partitions):
     partitions = partitions.astype(int)
 
