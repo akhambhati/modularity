@@ -19,7 +19,7 @@ def modularity_statistic(B, partition, n_perm):
         for i in range(n_perm):
             partition2 = np.random.permutation(partition) 
             qc_null.append(B[partition2 == p_id, :][:, partition2 == p_id].mean())
-        qc_pv = np.mean(np.array(qc_null) > qc)
+        qc_pv = np.mean(np.array(qc_null) >= qc)
         
         Q[p_id] = {'Qc': qc, 'Qc_pv': qc_pv}
     return Q
