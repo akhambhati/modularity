@@ -9,10 +9,19 @@ def comms_to_coassign(comms):
     return (comms_matr @ comms_matr.T)
 
 
-def modularity_statistic(B, partition):
+def modularity_statistic(B, partition, n_perm):
     partition = partition.astype(int)
-
-    Q = np.sum(B*comms_to_coassign(partition))
+   
+    Q = {}
+    for p_id in np.unique(partition):
+        qc = B[partition == p_id, :][:, partition == p_id].mean()
+        qc_null = []
+        for i in range(n_perm):
+            partition2 = np.random.permutation(partition) 
+            qc_null.append(B[partition2 == p_id, :][:, partition2 == p_id].mean())
+        qc_pv = np.mean(np.array(qc_null) > qc)
+        
+        Q[p_id] = {'Qc': qc, 'Qc_pv': qc_pv}
     return Q
 
 
