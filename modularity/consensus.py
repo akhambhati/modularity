@@ -17,7 +17,7 @@ def gen_consensus(B, n_consensus, max_tries=10, modularity_fn=None):
                 comms = modularity_fn(B)
             A_cons += comms_to_coassign(comms)
         if A_cons_init is None:
-            A_cons_init = A_cons / n_iter
+            A_cons_init = A_cons / n_consensus
 
         n_uncertain = ((A_cons > 0) & (A_cons < n_iter)).sum()
         if n_uncertain == 0:
