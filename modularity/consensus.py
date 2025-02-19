@@ -1,7 +1,7 @@
 from tqdm import tqdm
 import numpy as np
 from .genlouvain import genlouvain 
-
+from .stats import comms_to_coassign 
 
 louvain_helper = lambda x: genlouvain(x, limit=1000, verbose=False)
 
