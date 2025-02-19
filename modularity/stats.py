@@ -23,7 +23,7 @@ def modularity_statistic(B, partition, n_perm):
         
         Q[p_id] = {
                 'Qc': qc, 'Qc_pv': qc_pv, 
-                'N': np.int(partition==p_id).sum()),
+                'N': int((partition==p_id).sum()),
                 'inds': np.flatnonzero(partition==p_id)}
     return Q
 
