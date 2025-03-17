@@ -9,7 +9,7 @@ louvain_helper = lambda x: genlouvain(x, limit=1000, verbose=False)
 
 def rewire_helper(A):
     A_null = np.zeros_like(A)
-    A_null[*np_triu_indices_from(A, k=1)] = np.random.permutation(
+    A_null[*np.triu_indices_from(A, k=1)] = np.random.permutation(
             A[*np.triu_indices_from(A, k=1)])
     A_null += A_null.T
     return A_null
