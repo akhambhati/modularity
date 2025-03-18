@@ -8,30 +8,32 @@ from .consensus import gen_consensus
 def recursive_clustering(
         A,
         n_consensus,
-        min_comm_size=1):
+        initial_comms=None):
 
-    comm_layers = [np.zeros(len(A))]
-    last_comm_id = 0
-    while True:
-        print('Optimizing Layer: {}'.format(len(comm_layers)))
-        new_comm_layer = np.nan*np.zeros(len(A))
-        comm_ids = np.unique(comm_layers[-1])
-        if len(comm_ids) == len(A):
-            break
-        for c_id in comm_ids:
-            if np.isnan(c_id):
-                continue
-            A_comm = A[comm_layers[-1]==c_id, :][:, comm_layers[-1]==c_id]
-            subcomms = gen_consensus(A_comm, n_consensus)[0].astype(float)
-            for sub_c_id in np.unique(subcomms):
-                if len(subcomms[subcomms == sub_c_id]) < min_comm_size:
-                    subcomms[subcomms == sub_c_id] = np.nan
-            subcomms += (last_comm_id + 1)
-            new_comm_layer[comm_layers[-1]==c_id] = subcomms
-            last_comm_id = max(subcomms)
-        if np.isnan(new_comm_layer).all():
-            break
-        comm_layers.append(new_comm_layer)
+    # Assign all nodes to same community if at the top of the hierarchy
+    if initial_comms is None:
+        initial_comms = np.zeros(len(A)).astype(int).astype(str)
+   
+    # Make sure init comms are not all singletons
+    comm_ids = np.unique(initial_comms)
+    if len(comm_ids) == len(A):
+        break
+
+    # Placeholder for the next layer in the hierarchy
+    next_comms = initial_comms.copy()
+
+    # Iterate over communities in init layer
+    for c_id in comm_ids:
+
+        # Grab the sub-network belonging to the current community
+        A_comm = A[initial_comms==c_id, :][:, initial_comms==c_id]
+
+        # Find subnetwork communities using consensus clustering with 
+        # a permutational null model
+        subcomms = gen_consensus(A_comm, n_consensus)[0].astype(int).astype(str)
+
+        # Insert community hierarchy label
+        next_comms[initial_comms == c_id] += ("." + subcomms)
     return np.array(comm_layers)
 
 
