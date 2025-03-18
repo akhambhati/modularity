@@ -19,7 +19,7 @@ def gen_consensus(A, n_consensus, max_tries=10, P_estimator=None, modularity_fn=
     A = A.copy()
 
     A_cons_init = None 
-    for n_tries in range(max_tries):
+    for n_tries in tqdm(max_tries):
         A_cons = np.zeros_like(A)
         for n_iter in range(n_consensus):
             if P_estimator is None:
