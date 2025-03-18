@@ -1,64 +1,14 @@
 from tqdm import tqdm
 import numpy as np
 from .genlouvain import genlouvain 
-
-
-def comms_to_coassign(comms):
-    comms_matr = np.zeros((len(comms), len(np.unique(comms))))
-    comms_matr[np.arange(len(comms)), comms] = 1
-    return (comms_matr @ comms_matr.T)
-
-
-def gen_consensus(A, P_estimator, n_consensus, max_tries=10): 
-    n_tries = 0
-    last_uncertain = np.inf
-    A_cons_best = None
-    A_cons_perm_best = None
-    while True: 
-        A_cons = np.zeros_like(A)
-        A_cons_perm = np.zeros_like(A)
-        for n_iter in range(n_consensus):
-            B = A - P_estimator(A)
-            comms, _ = genlouvain(B, limit=1000, verbose=False)
-            A_cons += comms_to_coassign(comms)
-            A_cons_perm += comms_to_coassign(np.random.permutation(comms))
-        A_cons /= n_iter
-        A_cons[np.diag_indices_from(A_cons)] = 0
-        A_cons_perm /= n_iter
-        A_cons_perm[np.diag_indices_from(A_cons_perm)] = 0
-
-        n_tries += 1
-        if n_tries >= max_tries:
-            break
-
-        n_uncertain = ((A_cons > 0) & (A_cons < 1)).sum()
-        if n_uncertain < last_uncertain:
-            A_cons_best = A_cons.copy()
-            A_cons_perm_best = A_cons_perm.copy()
-            last_uncertain = n_uncertain
-        if last_uncertain == 0:
-            break
-    comms, _ = genlouvain(A_cons_best-A_cons_perm_best,
-            limit=1000, verbose=False) 
-
-    return comms, A_cons_best
-
-
-def calc_modularity(A, P_estimator, partition, n_perm):
-    B = A - P_estimator(A)
-    partition = partition.astype(int)
-    Q = np.sum(B*comms_to_coassign(partition))
-    Q_null = np.array([
-        np.sum(B*comms_to_coassign(np.random.permutation(partition)))
-        for i in range(n_perm)])
-    return Q, np.mean(Q_null >= Q)
+from .stats import comms_to_coassign, modularity_statistic
+from .consensus import gen_consensus
 
 
 def recursive_clustering(
         A,
-        P_estimator,
         n_consensus,
-        min_comm_size=0):
+        min_comm_size=1):
 
     comm_layers = [np.zeros(len(A))]
     last_comm_id = 0
@@ -72,8 +22,7 @@ def recursive_clustering(
             if np.isnan(c_id):
                 continue
             A_comm = A[comm_layers[-1]==c_id, :][:, comm_layers[-1]==c_id]
-            subcomms, subA_cons = gen_consensus(A_comm, P_estimator, n_consensus)
-            subcomms = subcomms.astype(float)
+            subcomms = gen_consensus(A_comm, n_consensus)[0].astype(float)
             for sub_c_id in np.unique(subcomms):
                 if len(subcomms[subcomms == sub_c_id]) < min_comm_size:
                     subcomms[subcomms == sub_c_id] = np.nan
