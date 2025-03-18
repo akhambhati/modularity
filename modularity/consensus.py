@@ -19,7 +19,7 @@ def gen_consensus(A, n_consensus, max_tries=10, tolerance=0, P_estimator=None, m
     A = A.copy()
 
     A_cons_init = None 
-    for n_tries in tqdm(range(max_tries)):
+    for n_tries in range(max_tries):
         A_cons = np.zeros_like(A)
         for n_iter in range(n_consensus):
             if P_estimator is None:
@@ -37,6 +37,7 @@ def gen_consensus(A, n_consensus, max_tries=10, tolerance=0, P_estimator=None, m
             A_cons_init = A_cons / n_consensus
 
         n_uncertain = ((A_cons > 0) & (A_cons < n_iter)).sum()
+        print(f"Consensus Iter: {n_tries+1}  |   Uncertain Edges: {n_uncertain}")
         if n_uncertain <= tolerance:
             break
 
