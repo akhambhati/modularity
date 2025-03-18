@@ -17,7 +17,7 @@ def recursive_clustering(
     # Make sure init comms are not all singletons
     comm_ids = np.unique(initial_comms)
     if len(comm_ids) == len(A):
-        break
+        return initial_comms
 
     # Placeholder for the next layer in the hierarchy
     next_comms = initial_comms.copy()
@@ -34,7 +34,7 @@ def recursive_clustering(
 
         # Insert community hierarchy label
         next_comms[initial_comms == c_id] += ("." + subcomms)
-    return np.array(comm_layers)
+    return next_comms
 
 
 def _nested_dict(dd, kk, vals=None):
