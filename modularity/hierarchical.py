@@ -8,7 +8,8 @@ from .consensus import gen_consensus
 def recursive_clustering(
         A,
         n_consensus,
-        initial_comms=None):
+        initial_comms=None,
+        *args, **kwargs):
 
     # Assign all nodes to same community if at the top of the hierarchy
     if initial_comms is None:
@@ -30,7 +31,7 @@ def recursive_clustering(
 
         # Find subnetwork communities using consensus clustering with 
         # a permutational null model
-        subcomms = gen_consensus(A_comm, n_consensus)[0].astype(int).astype(str)
+        subcomms = gen_consensus(A_comm, n_consensus, *args, **kwargs)[0].astype(int).astype(str)
 
         # Insert community hierarchy label
         next_comms[initial_comms == c_id] += ("." + subcomms)
