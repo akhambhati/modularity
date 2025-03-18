@@ -15,11 +15,11 @@ def rewire_helper(A):
     return A_null
 
 
-def gen_consensus(A, n_consensus, max_tries=10, P_estimator=None, modularity_fn=None): 
+def gen_consensus(A, n_consensus, max_tries=10, tolerance=0, P_estimator=None, modularity_fn=None): 
     A = A.copy()
 
     A_cons_init = None 
-    for n_tries in tqdm(max_tries):
+    for n_tries in tqdm(range(max_tries)):
         A_cons = np.zeros_like(A)
         for n_iter in range(n_consensus):
             if P_estimator is None:
@@ -37,7 +37,7 @@ def gen_consensus(A, n_consensus, max_tries=10, P_estimator=None, modularity_fn=
             A_cons_init = A_cons / n_consensus
 
         n_uncertain = ((A_cons > 0) & (A_cons < n_iter)).sum()
-        if n_uncertain == 0:
+        if n_uncertain <= tolerance:
             break
 
         A = A_cons.copy()
