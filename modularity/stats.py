@@ -10,8 +10,6 @@ def comms_to_coassign(comms):
 
 
 def modularity_statistic(B, partition, n_perm):
-    partition = partition.astype(int)
-   
     Q = {}
     for p_id in np.unique(partition):
         qc = B[partition == p_id, :][:, partition == p_id].mean()
